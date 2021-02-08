@@ -37,7 +37,7 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = Example()
     ex.show()
-    os.remove(map_file)
+    os.remove("map.png")
     sys.exit(app.exec())
 
 
