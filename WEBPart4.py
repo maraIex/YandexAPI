@@ -1,6 +1,7 @@
 import sys
 import os
 import requests
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QLabel, QPushButton
 
@@ -10,11 +11,16 @@ from PyQt5.QtWidgets import QApplication, QWidget
 class Example(QWidget):
     def __init__(self):
         super().__init__()
+        self.spn_levels = [0.005, 0.01, 0.015, 0.025, 0.045, 0.06]
+        self.spni = 0
+        self.spn = self.spn_levels[self.spni]
         self.setGeometry(300, 300, 300, 300)
         self.setWindowTitle('Карта')
         self.map_type = "map"
+        self.ll = [37.530887, 55.703118]
         # self.draw_map()
         self.initUI()
+        self.draw_map()
 
     def change_type(self):
         if self.map_type == "map":
@@ -25,7 +31,9 @@ class Example(QWidget):
             self.map_type = "map"
 
     def draw_map(self):
-        map_request = f"http://static-maps.yandex.ru/1.x/?ll=37.530887,55.703118&spn=0.002,0.002&l={self.map_type}"
+        l1 = self.ll[0]
+        l2 = self.ll[1]
+        map_request = f"http://static-maps.yandex.ru/1.x/?ll={l1},{l2}&spn={str(self.spn)},{str(self.spn)}&l={self.map_type}"
         response = requests.get(map_request)
 
         if not response:
@@ -54,18 +62,48 @@ class Example(QWidget):
     def initUI(self):
         self.image = QLabel(self)
         self.image.resize(300, 300)
-        self.draw_btn = QPushButton('Нарисовать \n карту', self)
-        self.draw_btn.resize(70, 50)
-        self.draw_btn.move(5, 55)
-        self.draw_btn.clicked.connect(self.draw_map)
-        self.btn = QPushButton('Сменить \n вид', self)
-        self.btn.resize(70, 50)
-        self.btn.move(5, 5)
-        self.btn.clicked.connect(self.change_type)
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_C:
+            self.change_type()
+            self.draw_map()
+        elif event.key() == Qt.Key_D:
+            self.draw_map()
+        elif event.key() == Qt.Key_PageUp:
+            if self.spni < 4:
+                self.spni = self.spni + 1
+            self.spn = self.spn_levels[self.spni]
+            self.draw_map()
+        elif event.key() == Qt.Key_PageDown:
+            if self.spni > 0:
+                self.spni = self.spni - 1
+            self.spn = self.spn_levels[self.spni]
+            self.draw_map()
+        elif event.key() == Qt.Key_Up:
+            if self.ll[1] + self.spn < 90:
+                self.ll[1] = self.ll[1] + self.spn
+            self.draw_map()
+        elif event.key() == Qt.Key_Down:
+            if self.ll[1] - self.spn > -90:
+                self.ll[1] = self.ll[1] - self.spn
+            self.draw_map()
+        elif event.key() == Qt.Key_Left:
+            if self.ll[0] - self.spn > -180:
+                self.ll[0] = self.ll[0] - self.spn
+            self.draw_map()
+        elif event.key() == Qt.Key_Right:
+            if self.ll[0] + self.spn < 180:
+                self.ll[0] = self.ll[0] + self.spn
+            self.draw_map()
+
+
+def except_hook(cls, exception, traceback):
+    sys.__excepthook__(cls, exception, traceback)
 
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = Example()
     ex.show()
+    sys.excepthook = except_hook
     sys.exit(app.exec())
